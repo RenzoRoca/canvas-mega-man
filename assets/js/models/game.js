@@ -12,18 +12,33 @@ class Game {
         this.floorHeight = this.canvas.height - 100
 
         this.background = new Background(this.ctx);
-        this.cliff = new Cliff(this.ctx, 180, this.floorHeight + 8, 50);
         this.lifeBar = new Lifebar(this.ctx, 10, 48, 20, 100);
         this.lifeMeterY = 53;
         this.lifeMeterHeight = 90;
         this.megaman = new Megaman(this.ctx, 50, this.floorHeight);
         this.enemies = [];
+        this.cliffs = [
+            new Cliff(this.ctx, this.megaman.x + 1000, this.floorHeight, 50),
+            new Cliff(this.ctx, this.megaman.x + 1500, this.floorHeight, 50),
+            new Cliff(this.ctx, this.megaman.x + 2000, this.floorHeight, 50),
+            new Cliff(this.ctx, this.megaman.x + 2200, this.floorHeight, 50),
+            new Cliff(this.ctx, this.megaman.x + 2300, this.floorHeight, 50),
+            new Cliff(this.ctx, this.megaman.x + 2600, this.floorHeight, 100),
+            new Cliff(this.ctx, this.megaman.x + 2800, this.floorHeight, 100),
+            new Cliff(this.ctx, this.megaman.x + 3000, this.floorHeight, 50),
+            new Cliff(this.ctx, this.megaman.x + 3100, this.floorHeight, 50),
+            new Cliff(this.ctx, this.megaman.x + 3200, this.floorHeight, 50),
+            new Cliff(this.ctx, this.megaman.x + 3300, this.floorHeight, 50),
+            new Cliff(this.ctx, this.megaman.x + 3400, this.floorHeight, 100)
+
+        ];
         this.invulnerable = false;
 
         // Sabemos en que coordenada acaba al nivel 
-        this.endLevelXcoor = 2000;
+        this.endLevelXcoor = 6000;
 
         this.drawEnemyCount = 0;
+        this.drawCliffCount = 0;
 
         const themeAudio = new Audio('assets/src/sound/wood-man-stage.mp3');
         themeAudio.volume = 0.2;
@@ -54,6 +69,7 @@ class Game {
                 this.draw();
                 this.checkCollisions();
                 this.addRandomEnemy();
+                //this.addRandomCliff();
             }, this.fps)
         }
     }
@@ -74,6 +90,7 @@ class Game {
         this.enemies = [];
 
         this.drawEnemyCount = 0;
+        this.drawCliffCount = 0;
         this.start();
     }
 
@@ -117,6 +134,14 @@ class Game {
         }
     }
 
+    addRandomCliff() {
+        if (this.drawCliffCount % 50 === 0 && this.megaman.movements.right) {
+            let cliff = new Cliff(this.ctx, 200, this.floorHeight, 50);
+            this.drawCliffCount = 0;
+            this.cliffs.push(cliff);
+        }
+    }
+
     clear() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.megaman.clear();
@@ -125,10 +150,11 @@ class Game {
 
     draw() {
         this.drawEnemyCount++;
+        this.drawCliffCount++;
         this.background.draw();
         this.lifeBar.draw();
         this.lifeBar.drawLifeMeter(15, this.lifeMeterY, 10, this.lifeMeterHeight);
-        //this.cliff.draw();
+        this.cliffs.forEach(cliff => cliff.draw());
         this.megaman.draw();
         this.enemies.forEach(enemy => enemy.draw());
         this.ctx.restore();
@@ -137,7 +163,7 @@ class Game {
     move() {
         if (this.megaman.x >= this.megaman.maxX && this.megaman.movements.right) {
             this.background.move();
-            //this.cliff.move();
+            this.cliffs.forEach(cliff => cliff.move());
             this.enemies.forEach(enemy => enemy.move(true));
         } else {
             if (!this.enemiesIntervalId) {
@@ -147,13 +173,11 @@ class Game {
                 }, 1000);
             }
         }
-        this.megaman.move();
+        this.megaman.move(this.megaman.isFalling);
     }
 
     checkCollisions() {
-
-        //this.checkCollisionsWithCliff();
-
+        this.checkCollisionsWithCliff();
         this.enemies.forEach(enemy => {
             this.checkCollisionsWithMegaman(enemy);
             this.checkBulletsCollision(enemy);
@@ -162,11 +186,22 @@ class Game {
     }
 
     checkCollisionsWithCliff() {
-        if (this.cliff.collidesWith(this.megaman)) {
-            this.megaman.vy = -10;
-        }
+        this.cliffs.forEach(cliff => {
+            if (cliff.collidesWith(this.megaman)) {
+                this.megaman.isJumping = true;
+                this.megaman.isFalling = true;
+                this.megaman.animateJump();
+                this.megaman.vy += 1;
+                setTimeout(() => this.end(), 1000);
+            }
+            this.enemies.forEach(enemy => {
+                if (cliff.collidesWith(enemy)) {
+                    let indexEnemy = this.enemies.indexOf(enemy);
+                    this.enemies.splice(indexEnemy, 1);
+                }
+            });
+        });
     }
-
 
     checkCollisionsWithMegaman(enemy) {
         if (this.megaman.collidesWith(enemy) && !this.invulnerable) {

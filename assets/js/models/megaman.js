@@ -40,6 +40,7 @@ class Megaman {
             left: false
         }
         this.isJumping = false;
+        this.isFalling = false;
 
         this.canFire = true;
         this.bullets = [];
@@ -121,7 +122,7 @@ class Megaman {
         }
     }
 
-    move() {
+    move(isFalling) {
 
         this.bullets.forEach(bullet => bullet.move(this.rightPosition));
 
@@ -144,15 +145,17 @@ class Megaman {
         this.y += this.vy;
 
         // Check canvas bounds
-        if (this.x >= this.maxX) {
-            this.x = this.maxX;
-        } else if (this.x <= this.minX) {
-            this.x = this.minX;
-        }
-        if (this.y >= this.maxY) {
-            this.y = this.maxY;
-            this.isJumping = false;
-            this.vy = 0;
+        if (!isFalling) {
+            if (this.x >= this.maxX) {
+                this.x = this.maxX;
+            } else if (this.x <= this.minX) {
+                this.x = this.minX;
+            }
+            if (this.y >= this.maxY) {
+                this.y = this.maxY;
+                this.isJumping = false;
+                this.vy = 0;
+            }
         }
     }
 
