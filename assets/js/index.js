@@ -1,8 +1,6 @@
 window.addEventListener('load', () => {
     const game = new Game('game-canvas', () => {
-
         document.getElementById('game-canvas').style.backgroundImage = "url('assets/src/img/game-over-screen.png')";
-        document.getElementById('game-canvas').style.background('');
     });
 
     document.addEventListener('keydown', (event) => {
