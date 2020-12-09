@@ -9,6 +9,7 @@ class Game {
         this.fps = 1000 / 60;
         this.drawIntervalId = undefined;
         this.enemiesIntervalId = undefined;
+        this.woodmanIntervalId = undefined;
         this.floorHeight = this.canvas.height - 100
 
         this.background = new Background(this.ctx);
@@ -16,6 +17,7 @@ class Game {
         this.lifeMeterY = 53;
         this.lifeMeterHeight = 90;
         this.megaman = new Megaman(this.ctx, 50, this.floorHeight);
+        this.woodman = new Woodman(this.ctx, this.canvas.width - 70, this.floorHeight + 5, 'assets/src/sprites/woodman.png', 1, 7, 10, 10, 20);
         this.enemies = [];
         this.cliffs = [
             new Cliff(this.ctx, this.megaman.x + 1000, this.floorHeight + 30, 50),
@@ -33,9 +35,8 @@ class Game {
 
         ];
         this.invulnerable = false;
-
-        // Sabemos en que coordenada acaba al nivel 
-        this.endLevelXcoor = 6000;
+        this.countCoordinate = 0;
+        this.endLevelXcoor = 2000;
 
         this.drawEnemyCount = 0;
         this.drawCliffCount = 0;
@@ -49,12 +50,20 @@ class Game {
         enemyDamageAudio.volume = 0.2;
         const gameOverAudio = new Audio('assets/src/sound/game-over.mp3');
         gameOverAudio.volume = 0.2;
+        const bossAudio = new Audio('assets/src/sound/Boss.mp3');
+        bossAudio.volume = 0.2;
+        const stageClearAudio = new Audio('assets/src/sound/StageClear.mp3');
+        stageClearAudio.volume = 0.2;
+
+        this.endGame = false;
 
         this.sounds = {
             theme: themeAudio,
             megaManDamage: megaManDamageAudio,
             enemyDamage: enemyDamageAudio,
-            gameOver: gameOverAudio
+            gameOver: gameOverAudio,
+            boss: bossAudio,
+            stageClear: stageClearAudio
         }
 
         this.onGameEnd = onGameEnd;
@@ -68,7 +77,9 @@ class Game {
                 this.move();
                 this.draw();
                 this.checkCollisions();
-                this.addRandomEnemy();
+                if (!this.woodman.spawned) {
+                    this.addRandomEnemy();
+                }
                 //this.addRandomCliff();
             }, this.fps)
         }
@@ -155,6 +166,7 @@ class Game {
     clear() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.megaman.clear();
+        this.woodman.clear();
         this.enemies = this.enemies.filter(enemy => (enemy.x + enemy.width) >= 0);
     }
 
@@ -166,15 +178,28 @@ class Game {
         this.lifeBar.drawLifeMeter(15, this.lifeMeterY, 10, this.lifeMeterHeight);
         this.cliffs.forEach(cliff => cliff.draw());
         this.megaman.draw();
+
+        if (this.woodman.spawned) {
+            this.woodman.draw();
+        }
+
         this.enemies.forEach(enemy => enemy.draw());
         this.ctx.restore();
     }
 
     move() {
+        if (this.countCoordinate >= this.endLevelXcoor && !this.endGame) {
+            this.woodman.spawned = true;
+            this.enemies = [];
+            this.sounds.theme.pause();
+            this.sounds.boss.play();
+        }
+
         if (this.megaman.x >= this.megaman.maxX && this.megaman.movements.right) {
             this.background.move();
             this.cliffs.forEach(cliff => cliff.move());
             this.enemies.forEach(enemy => enemy.move(true));
+            this.countCoordinate += 2;
         } else {
             if (!this.enemiesIntervalId) {
 
@@ -183,6 +208,19 @@ class Game {
                 }, 1000);
             }
         }
+
+        if (this.woodman.spawned) {
+            if (!this.woodmanIntervalId) {
+                this.woodmanIntervalId = setInterval(() => {
+                    this.woodman.attack();
+                }, 2000);
+            }
+
+            if (this.woodman.bullets.length > 0) {
+                this.woodman.moveLeaves();
+            }
+        }
+
         this.megaman.move(this.megaman.isFalling);
     }
 
@@ -192,6 +230,16 @@ class Game {
             this.checkCollisionsWithMegaman(enemy);
             this.checkBulletsCollision(enemy);
         });
+
+        if (this.woodman.spawned) {
+            this.checkBulletsCollision(this.woodman);
+        }
+
+
+        if (this.woodman.spawned) {
+            this.woodman.bullets.forEach(bullet => this.checkCollisionsWithMegaman(bullet));
+            this.woodman.rainLeaves.forEach(bullet => this.checkCollisionsWithMegaman(bullet));
+        }
 
     }
 
@@ -223,6 +271,9 @@ class Game {
             this.megaman.lifePoints--;
 
             if (this.megaman.lifePoints < 1) {
+                this.countCoordinate = 0;
+                this.sounds.boss.pause();
+                this.woodman.spawned = false;
                 this.end();
             } else {
                 this.lifeMeterY += 13;
@@ -252,6 +303,13 @@ class Game {
             if (enemy.lifePoints < 1) {
                 let indexEnemy = this.enemies.indexOf(enemy);
                 this.enemies.splice(indexEnemy, 1);
+                if (this.woodman.spawned) {
+                    this.sounds.boss.pause();
+                    this.sounds.stageClear.play();
+                    this.woodman.spawned = false;
+                    this.endGame = true;
+                    setTimeout(() => this.end(), 4000);
+                }
             }
         }
     }

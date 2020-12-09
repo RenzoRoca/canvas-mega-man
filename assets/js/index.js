@@ -1,6 +1,11 @@
 window.addEventListener('load', () => {
     const game = new Game('game-canvas', () => {
+
+        //if (this.game.endGame) {
+        //document.getElementById('game-canvas').style.backgroundImage = "url('assets/src/img/game-over-screen.png')";
+        //} else {
         document.getElementById('game-canvas').style.backgroundImage = "url('assets/src/img/game-over-screen.png')";
+        //}
     });
 
     document.addEventListener('keydown', (event) => {
