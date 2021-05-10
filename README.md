@@ -1,8 +1,10 @@
 ## Mega Man Ironhack
 
-https://renzoroca.github.io/canvas-mega-man/index.html
+Mega Man mini game tribute using canvas and javascript, the goal is to eliminate all the enemy robots and the boss Woodman.
 
-Mega Man mini game tribute using canvas and javascript, the goal is to eliminate all the enemy robots.
+![Alt Text](assets/src/img/Megaman-demo.gif)
+
+https://renzoroca.github.io/canvas-mega-man/index.html
 
 ### Classes
 
